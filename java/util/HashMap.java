@@ -256,7 +256,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * than 2 and should be at least 8 to mesh with assumptions in
      * tree removal about conversion back to plain bins upon
      * shrinkage.
-     * 树化阈值：超过
+     * 链表树化阈值：链表超过8个节点就转化为红黑树
      */
     static final int TREEIFY_THRESHOLD = 8;
 
@@ -264,6 +264,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * The bin count threshold for untreeifying a (split) bin during a
      * resize operation. Should be less than TREEIFY_THRESHOLD, and at
      * most 6 to mesh with shrinkage detection under removal.
+     * 红黑树链式阈值： 红黑树节点少于6个就转化为链表
      */
     static final int UNTREEIFY_THRESHOLD = 6;
 
@@ -272,6 +273,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * (Otherwise the table is resized if too many nodes in a bin.)
      * Should be at least 4 * TREEIFY_THRESHOLD to avoid conflicts
      * between resizing and treeification thresholds.
+     * 树化的容量阈值：容量超过64才可以树化
      */
     static final int MIN_TREEIFY_CAPACITY = 64;
 
@@ -336,6 +338,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * cheapest possible way to reduce systematic lossage, as well as
      * to incorporate impact of the highest bits that would otherwise
      * never be used in index calculations because of table bounds.
+     * 高16位和低16位异或是为了保证散列到hashtable中更合理，散列的位置和
+     * hashCode的每一位都有关系，而不仅仅是低位
      */
     static final int hash(Object key) {
         int h;
@@ -345,6 +349,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Returns x's Class if it is of the form "class C implements
      * Comparable<C>", else null.
+     * TODO::???
      */
     static Class<?> comparableClassFor(Object x) {
         if (x instanceof Comparable) {
@@ -368,6 +373,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Returns k.compareTo(x) if x matches kc (k's screened comparable
      * class), else 0.
+     * TODO: :???
      */
     @SuppressWarnings({"rawtypes","unchecked"}) // for cast to Comparable
     static int compareComparables(Class<?> kc, Object k, Object x) {
@@ -377,6 +383,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Returns a power of two size for the given target capacity.
+     * 保证hashTable的容量一直是2^n $2^n>=cap>2^(n-1)$
      */
     static final int tableSizeFor(int cap) {
         int n = cap - 1;
@@ -395,17 +402,20 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * necessary. When allocated, length is always a power of two.
      * (We also tolerate length zero in some operations to allow
      * bootstrapping mechanics that are currently not needed.)
+     * hashMap中存储数据的变量叫table，是一个数组，每个元素可能是链表，也可能是红黑树
      */
     transient Node<K,V>[] table;
 
     /**
      * Holds cached entrySet(). Note that AbstractMap fields are used
      * for keySet() and values().
+     * TODO: ???
      */
     transient Set<Map.Entry<K,V>> entrySet;
 
     /**
      * The number of key-value mappings contained in this map.
+     * hashtable中元素个数
      */
     transient int size;
 
@@ -415,11 +425,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * the HashMap or otherwise modify its internal structure (e.g.,
      * rehash).  This field is used to make iterators on Collection-views of
      * the HashMap fail-fast.  (See ConcurrentModificationException).
+     * TODO: ???
      */
     transient int modCount;
 
     /**
      * The next size value at which to resize (capacity * load factor).
+     * resize触发的阈值capacity * load factor
      *
      * @serial
      */
@@ -431,6 +443,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The load factor for the hash table.
+     * hashMap的负载因子
      *
      * @serial
      */
@@ -441,6 +454,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Constructs an empty <tt>HashMap</tt> with the specified initial
      * capacity and load factor.
+     * HashMap构造函数
      *
      * @param  initialCapacity the initial capacity
      * @param  loadFactor      the load factor
@@ -463,7 +477,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Constructs an empty <tt>HashMap</tt> with the specified initial
      * capacity and the default load factor (0.75).
-     *
+     * HashMap构造函数
+     * 
      * @param  initialCapacity the initial capacity.
      * @throws IllegalArgumentException if the initial capacity is negative.
      */
@@ -474,6 +489,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Constructs an empty <tt>HashMap</tt> with the default initial capacity
      * (16) and the default load factor (0.75).
+     * HashMap构造函数
      */
     public HashMap() {
         this.loadFactor = DEFAULT_LOAD_FACTOR; // all other fields defaulted
@@ -484,6 +500,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * specified <tt>Map</tt>.  The <tt>HashMap</tt> is created with
      * default load factor (0.75) and an initial capacity sufficient to
      * hold the mappings in the specified <tt>Map</tt>.
+     * HashMap构造函数
      *
      * @param   m the map whose mappings are to be placed in this map
      * @throws  NullPointerException if the specified map is null
@@ -522,7 +539,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Returns the number of key-value mappings in this map.
-     *
+     * 返回HashMap中元素个数
+     * 
      * @return the number of key-value mappings in this map
      */
     public int size() {
@@ -531,6 +549,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Returns <tt>true</tt> if this map contains no key-value mappings.
+     * 返回HashMap是否为空
      *
      * @return <tt>true</tt> if this map contains no key-value mappings
      */
