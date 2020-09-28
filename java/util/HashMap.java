@@ -581,6 +581,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Implements Map.get and related methods
+     * 根据hash确定数组位置，再根据key和第一个元素是链表元素还是树原始进行查找
      *
      * @param hash hash for key
      * @param key the key
@@ -609,6 +610,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Returns <tt>true</tt> if this map contains a mapping for the
      * specified key.
+     * 判断key是否存在,复用getNode方法
      *
      * @param   key   The key whose presence in this map is to be tested
      * @return <tt>true</tt> if this map contains a mapping for the specified
@@ -622,6 +624,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * Associates the specified value with the specified key in this map.
      * If the map previously contained a mapping for the key, the old
      * value is replaced.
+     * 向HashMap中加入<key,value>,调用putVal方法
      *
      * @param key key with which the specified value is to be associated
      * @param value value to be associated with the specified key
@@ -636,12 +639,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Implements Map.put and related methods
+     * 向HashMap中加入<key,value>
      *
      * @param hash hash for key
      * @param key the key
      * @param value the value to put
-     * @param onlyIfAbsent if true, don't change existing value
-     * @param evict if false, the table is in creation mode.
+     * @param onlyIfAbsent if true, don't change existing value是否改变现存的值
+     * @param evict if false, the table is in creation mode. table是否需要创建
      * @return previous value, or null if none
      */
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
