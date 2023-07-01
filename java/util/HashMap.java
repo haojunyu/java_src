@@ -425,7 +425,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * the HashMap or otherwise modify its internal structure (e.g.,
      * rehash).  This field is used to make iterators on Collection-views of
      * the HashMap fail-fast.  (See ConcurrentModificationException).
-     * TODO: ???
+     * 记录HashMap被修改的次数（putVal/removeNode被调用的次数）
      */
     transient int modCount;
 
@@ -516,6 +516,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param m the map
      * @param evict false when initially constructing this map, else
      * true (relayed to method afterNodeInsertion).
+     * 将Map中的kv键值对依次放入到HashMap中，注意table空间申请或者扩容table
      */
     final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
         int s = m.size();
@@ -651,32 +652,35 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
         Node<K,V>[] tab; Node<K,V> p; int n, i;
+        // table是否需要初始化
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
-        if ((p = tab[i = (n - 1) & hash]) == null)
+        if ((p = tab[i = (n - 1) & hash]) == null)      // 数组元素为空
             tab[i] = newNode(hash, key, value, null);
         else {
             Node<K,V> e; K k;
             if (p.hash == hash &&
-                ((k = p.key) == key || (key != null && key.equals(k))))
+                ((k = p.key) == key || (key != null && key.equals(k)))) // 加入的key已经存在且是第一个元素
                 e = p;
             else if (p instanceof TreeNode)
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
             else {
                 for (int binCount = 0; ; ++binCount) {
+                    // 插入到最后，并判断是否要树化
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                             treeifyBin(tab, hash);
                         break;
                     }
+                    // 判断加入的key是否已经存在
                     if (e.hash == hash &&
                         ((k = e.key) == key || (key != null && key.equals(k))))
                         break;
                     p = e;
                 }
             }
-            if (e != null) { // existing mapping for key
+            if (e != null) { // 对已经存在的key判断是否要变更其值
                 V oldValue = e.value;
                 if (!onlyIfAbsent || oldValue == null)
                     e.value = value;
@@ -697,6 +701,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * Otherwise, because we are using power-of-two expansion, the
      * elements from each bin must either stay at same index, or move
      * with a power of two offset in the new table.
+     * HashMap扩容（一倍），如果table还没有创建则创建。
      *
      * @return the table
      */
@@ -704,8 +709,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         Node<K,V>[] oldTab = table;
         int oldCap = (oldTab == null) ? 0 : oldTab.length;
         int oldThr = threshold;
+        // 确定新HashMap的容量Cap和阈值Thr
         int newCap, newThr = 0;
-        if (oldCap > 0) {
+        if (oldCap > 0) {   // 已经初始化
             if (oldCap >= MAXIMUM_CAPACITY) {
                 threshold = Integer.MAX_VALUE;
                 return oldTab;
@@ -714,9 +720,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                      oldCap >= DEFAULT_INITIAL_CAPACITY)
                 newThr = oldThr << 1; // double threshold
         }
-        else if (oldThr > 0) // initial capacity was placed in threshold
+        else if (oldThr > 0) // initial capacity was placed in threshold 只初始化容量
             newCap = oldThr;
-        else {               // zero initial threshold signifies using defaults
+        else {               // zero initial threshold signifies using defaults 未初始化
             newCap = DEFAULT_INITIAL_CAPACITY;
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
@@ -726,6 +732,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                       (int)ft : Integer.MAX_VALUE);
         }
         threshold = newThr;
+        // 将旧HashMap中的元素迁移到新的HashMap中
         @SuppressWarnings({"rawtypes","unchecked"})
             Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
         table = newTab;
@@ -736,12 +743,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     oldTab[j] = null;
                     if (e.next == null)
                         newTab[e.hash & (newCap - 1)] = e;
-                    else if (e instanceof TreeNode)
+                    else if (e instanceof TreeNode) // 红黑树处理
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
-                    else { // preserve order
+                    else { // preserve order 链表处理
                         Node<K,V> loHead = null, loTail = null;
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
+                        // 尾插法
                         do {
                             next = e.next;
                             if ((e.hash & oldCap) == 0) {
@@ -806,6 +814,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *
      * @param m mappings to be stored in this map
      * @throws NullPointerException if the specified map is null
+     * 将Map类型的m中的所有kv放置到HashMap中
      */
     public void putAll(Map<? extends K, ? extends V> m) {
         putMapEntries(m, true);
@@ -819,6 +828,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         <tt>null</tt> if there was no mapping for <tt>key</tt>.
      *         (A <tt>null</tt> return can also indicate that the map
      *         previously associated <tt>null</tt> with <tt>key</tt>.)
+     * 根据key删除HashMap中的元素，并返回对应的value
      */
     public V remove(Object key) {
         Node<K,V> e;
@@ -835,6 +845,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param matchValue if true only remove if value is equal
      * @param movable if false do not move other nodes while removing
      * @return the node, or null if none
+     * 
      */
     final Node<K,V> removeNode(int hash, Object key, Object value,
                                boolean matchValue, boolean movable) {
@@ -842,6 +853,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (p = tab[index = (n - 1) & hash]) != null) {
             Node<K,V> node = null, e; K k; V v;
+            // 定位key所在的元素node
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
                 node = p;
@@ -880,6 +892,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Removes all of the mappings from this map.
      * The map will be empty after this call returns.
+     * 清空HashMap
      */
     public void clear() {
         Node<K,V>[] tab;
@@ -898,6 +911,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param value value whose presence in this map is to be tested
      * @return <tt>true</tt> if this map maps one or more keys to the
      *         specified value
+     * 判断HashMap是否包含值value
+     * TODO: 为啥不区分list和tree来操作？
      */
     public boolean containsValue(Object value) {
         Node<K,V>[] tab; V v;
